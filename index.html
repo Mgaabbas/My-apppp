@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NutriAI" />
+  <meta name="theme-color" content="#00e5ff" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>AI Nutrition Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#0a0f1e;--card:#111827;--border:#1e2d45;
+      --accent:#00e5ff;--ag:#00e5ff22;
+      --green:#00ff9d;--yellow:#ffd166;--red:#ff4d6d;--purple:#b47dff;
+      --text:#e2e8f0;--muted:#64748b;--pill:#1a2540;
+      --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+      --font-en:'DM Sans',sans-serif;
+      --font-ur:'Noto Nastaliq Urdu',serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:var(--font-en);background:var(--bg);color:var(--text);min-height:100dvh;overscroll-behavior:none}
+    body.ur{font-family:var(--font-ur)}
+    #app{max-width:480px;margin:0 auto;padding:calc(var(--st) + 62px) 16px calc(var(--sb) + 48px)}
+
+    /* Urdu RTL overrides */
+    body.ur .header h1{font-size:26px;line-height:1.5}
+    body.ur .input-card textarea{font-family:var(--font-ur);font-size:16px;text-align:right;direction:rtl}
+    body.ur .input-footer{flex-direction:row-reverse}
+    body.ur .ex-label{text-align:right}
+    body.ur .examples{direction:rtl}
+    body.ur .rname{font-family:var(--font-ur);font-size:18px;direction:rtl;text-align:right}
+    body.ur .sec-t{font-family:var(--font-en);letter-spacing:1px}
+    body.ur .pl{font-family:var(--font-en)}
+    body.ur .pv{font-family:var(--font-en)}
+    body.ur .sc-lbl{font-family:var(--font-en)}
+    body.ur .sc-num{font-family:monospace}
+    body.ur .sc-exp{font-family:var(--font-ur);font-size:15px;line-height:2;direction:rtl;text-align:right}
+    body.ur .ag{font-family:var(--font-ur);font-size:13px}
+    body.ur .atm{font-family:var(--font-en)}
+    body.ur .ar{font-family:var(--font-ur);font-size:13px;line-height:2;direction:rtl;text-align:right}
+    body.ur .warn{direction:rtl;font-family:var(--font-ur);font-size:14px;line-height:1.8}
+    body.ur .sum-box{font-family:var(--font-ur);font-size:15px;line-height:2.2;direction:rtl;text-align:right}
+    body.ur .cal-lbl{font-family:var(--font-en);font-size:8px}
+    body.ur .header p{font-family:var(--font-ur);font-size:15px;line-height:1.8}
+    body.ur .badge{font-family:var(--font-en)}
+    body.ur .ibt{font-family:var(--font-ur);font-size:14px}
+    body.ur .ibs{font-family:var(--font-ur);font-size:12px}
+    body.ur .input-footer span{font-family:var(--font-ur);font-size:12px}
+    body.ur .btn-analyze{font-family:var(--font-ur);font-size:14px}
+    body.ur .sk-msg{font-family:var(--font-ur);font-size:14px}
+    body.ur .rh{flex-direction:row}
+
+    .header{text-align:center;margin-bottom:24px}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:var(--ag);border:1px solid #00e5ff44;border-radius:99px;padding:5px 14px;font-size:11px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:14px}
+    .header h1{font-size:28px;font-weight:900;line-height:1.2;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .header p{font-size:13px;color:var(--muted);margin-top:8px}
+
+    .input-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:14px}
+    .input-card textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:15px;font-family:inherit;line-height:1.6;resize:none}
+    .input-card textarea:focus{outline:none}
+    .input-card textarea::placeholder{color:var(--muted)}
+    .input-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .input-footer span{font-size:11px;color:var(--muted)}
+    .btn-analyze{background:var(--accent);color:#0a0f1e;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 0 16px #00e5ff44;transition:transform .1s;white-space:nowrap}
+    .btn-analyze:active{transform:scale(.96)}
+    .btn-analyze:disabled{background:var(--pill);color:var(--muted);box-shadow:none;cursor:default}
+
+    .ex-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+    .examples{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+    .chip{background:var(--pill);border:1px solid var(--border);border-radius:99px;padding:6px 13px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit}
+
+    .skeleton{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px}
+    .sk{height:14px;background:var(--pill);border-radius:8px;margin-bottom:14px;animation:pulse 1.2s ease infinite}
+    .sk-msg{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+
+    .result-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;animation:fadeSlide .4s ease}
+    .rh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+    .rname{font-size:21px;font-weight:800;color:var(--text)}
+    .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+    .tag{font-size:11px;font-weight:600;border-radius:6px;padding:2px 9px;font-family:var(--font-en)}
+    .tag-t{background:var(--ag);color:var(--accent)}
+    .cal-box{background:var(--ag);border:1px solid #00e5ff44;border-radius:12px;padding:6px 12px;text-align:center;min-width:64px;flex-shrink:0}
+    .cal-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;font-family:var(--font-en)}
+    .cal-val{font-size:19px;font-weight:900;color:var(--accent);font-family:monospace}
+    .cal-u{font-size:9px;color:var(--muted);font-family:var(--font-en)}
+    .sec{margin-bottom:16px}
+    .sec-t{font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;font-weight:700;margin-bottom:9px}
+    .pills{display:flex;gap:7px;flex-wrap:wrap}
+    .pill{background:var(--pill);border-radius:10px;padding:8px 11px;display:flex;flex-direction:column;gap:2px;flex:1;min-width:60px}
+    .pl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+    .pv{font-size:14px;font-weight:700}
+    .sc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .sc-lbl{font-size:11px;color:var(--muted)}
+    .sc-num{font-size:18px;font-weight:800;font-family:monospace}
+    .sc-track{background:#1e2d45;border-radius:99px;height:8px;overflow:hidden}
+    .sc-fill{height:100%;border-radius:99px;transition:width 1s ease}
+    .sc-exp{font-size:13px;color:var(--muted);line-height:1.5;margin-top:8px}
+    .age-cards{display:flex;flex-direction:column;gap:8px}
+    .ac{background:#0f1c33;border:1px solid var(--border);border-radius:12px;padding:11px 13px;display:flex;gap:11px;align-items:flex-start}
+    .ae{font-size:22px;line-height:1;flex-shrink:0}
+    .ab{flex:1}
+    .at{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+    .ag{font-size:12px;color:var(--muted);font-weight:600}
+    .atm{font-size:12px;font-weight:700;color:var(--accent);background:var(--ag);border-radius:6px;padding:2px 8px;font-family:var(--font-en)}
+    .ar{font-size:12px;color:var(--muted);line-height:1.5}
+    .warns{display:flex;flex-direction:column;gap:8px}
+    .warn{background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:8px;font-size:13px;color:#ff8fa3}
+    .sum-box{background:#0f1c33;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.7}
+    .err-box{background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:16px;padding:18px;text-align:center;color:#ff8fa3;font-size:13px;line-height:1.8}
+    .err-box a{color:var(--accent);text-decoration:none}
+    .err-box code{font-size:11px;color:var(--yellow);display:block;margin:8px 0;word-break:break-all;font-family:monospace}
+
+    /* Top bar */
+    #topbar{position:fixed;top:var(--st);left:0;right:0;z-index:200;max-width:480px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+    #gear{background:var(--pill);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;box-shadow:0 0 12px #00000066}
+    #lang-btn{background:var(--pill);border:1px solid var(--accent);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .2s}
+    #lang-btn:active{background:var(--ag)}
+
+    /* Modal */
+    #modal{position:fixed;inset:0;z-index:9999;background:#0a0f1ef5;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
+    .mbox{background:#111827;border:1px solid #00e5ff44;border-radius:24px;padding:24px 20px;width:100%;max-width:430px;box-shadow:0 0 40px #00e5ff18;animation:fadeSlide .35s ease;max-height:92vh;overflow-y:auto}
+    .micon{font-size:36px;text-align:center;margin-bottom:10px}
+    .mtitle{font-size:19px;font-weight:800;text-align:center;color:var(--text);margin-bottom:4px}
+    .fbadge{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+    .fb{display:inline-flex;align-items:center;gap:4px;background:#00ff9d18;border:1px solid #00ff9d44;border-radius:99px;padding:3px 11px;font-size:11px;color:#00ff9d;font-weight:700}
+    .steps{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+    .step{display:flex;align-items:flex-start;gap:10px;background:var(--pill);border-radius:12px;padding:11px 12px}
+    .snum{background:var(--accent);color:#0a0f1e;border-radius:50%;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:1px}
+    .stxt{font-size:12px;color:var(--muted);line-height:1.55}
+    .stxt strong{color:var(--text)}
+    .stxt a{color:var(--accent);text-decoration:none;font-weight:700}
+    .klbl{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+    .kinp-wrap{background:var(--pill);border:1px solid var(--border);border-radius:14px;padding:4px 4px 4px 13px;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+    .kinp-wrap input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:monospace;padding:9px 0}
+    .kinp-wrap input:focus{outline:none}
+    .kinp-wrap input::placeholder{color:var(--muted);font-family:inherit;font-size:12px}
+    .eye{background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;padding:6px 8px}
+    .btn-row{display:flex;gap:8px;margin-bottom:10px}
+    .btn-test{background:var(--pill);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+    .btn-test:disabled{opacity:.5;cursor:default}
+    .btn-save{flex:1;background:var(--accent);color:#0a0f1e;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+    #test-res{margin-bottom:8px;font-size:12px}
+    .tr-ok{background:#00ff9d18;border:1px solid #00ff9d44;border-radius:10px;padding:8px 12px;color:#00ff9d}
+    .tr-err{background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:10px;padding:8px 12px;color:#ff8fa3}
+    .tr-warn{background:#ffd16618;border:1px solid #ffd16644;border-radius:10px;padding:8px 12px;color:#ffd166}
+    .saved-row{display:flex;align-items:center;gap:8px;background:#00ff9d18;border:1px solid #00ff9d44;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#00ff9d}
+    .mnote{font-size:11px;color:var(--muted);text-align:center;line-height:1.5;margin-top:8px}
+
+    #inst-bar{position:fixed;bottom:calc(var(--sb) + 10px);left:16px;right:16px;max-width:448px;margin:0 auto;background:var(--card);border:1px solid var(--accent);border-radius:16px;padding:13px 15px;display:none;align-items:center;gap:11px;box-shadow:0 0 20px #00e5ff22;z-index:998}
+    .ibt{font-size:13px;font-weight:700;color:var(--text)}
+    .ibs{font-size:11px;color:var(--muted);margin-top:2px}
+    .btn-inst{background:var(--accent);color:#0a0f1e;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+    .btn-dis{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+
+    .spinner{width:12px;height:12px;border:2px solid #ffffff44;border-top-color:#0a0f1e;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+    .spinner-m{width:11px;height:11px;border:2px solid var(--muted);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div id="topbar">
+  <div id="gear" onclick="openModal()">⚙️</div>
+  <button id="lang-btn" onclick="toggleLang()">
+    <span id="lang-flag">🇵🇰</span>
+    <span id="lang-label">اردو</span>
+  </button>
+</div>
+
+<!-- Modal -->
+<div id="modal">
+  <div class="mbox">
+    <div class="micon">⚡</div>
+    <div class="mtitle">Free AI Setup</div>
+    <div class="fbadge">
+      <span class="fb">✅ 100% FREE</span>
+      <span class="fb" style="background:#b47dff18;border-color:#b47dff44;color:#b47dff">🚀 Super Fast</span>
+      <span class="fb" style="background:#ffd16618;border-color:#ffd16644;color:#ffd166">💳 No Card</span>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="snum">1</div>
+        <div class="stxt"><a href="https://console.groq.com/keys" target="_blank"><strong>console.groq.com/keys</strong> 👆 tap karo</a><br>Google ya GitHub se free login karo</div>
+      </div>
+      <div class="step">
+        <div class="snum">2</div>
+        <div class="stxt"><strong>"Create API Key"</strong> button dabao<br>Koi bhi naam likho → Create karo</div>
+      </div>
+      <div class="step">
+        <div class="snum">3</div>
+        <div class="stxt">Key copy karo — <strong style="color:var(--accent)">gsk_</strong> se shuru hogi<br>Neeche paste karo → Test → Save!</div>
+      </div>
+    </div>
+    <div id="saved-row" class="saved-row" style="display:none">✅ Key pehle se saved hai — update kar sakte ho</div>
+    <div class="klbl">Groq API Key Paste Karo</div>
+    <div class="kinp-wrap">
+      <input type="password" id="key-inp" placeholder="gsk_..." autocomplete="off"/>
+      <button class="eye" onclick="toggleEye()">👁️</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-test" id="test-btn" onclick="testKey()">🧪 Test</button>
+      <button class="btn-save" onclick="saveKey()">💾 Save & Start</button>
+    </div>
+    <div id="test-res"></div>
+    <div class="mnote">🔒 Key sirf aapke phone mein hai • Kisi ko nahi jaati</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="badge">⚡ AI NUTRITION ANALYZER</div>
+    <h1 id="h1-text">What Are You<br>Consuming?</h1>
+    <p id="sub-text">Any food or drink — instant AI analysis</p>
+  </div>
+
+  <div class="input-card">
+    <textarea id="food-inp" rows="3" id="food-inp"
+      placeholder="Type any food or drink…"></textarea>
+    <div class="input-footer">
+      <span id="hint-text">Enter dabao ya Analyze tap karo</span>
+      <button class="btn-analyze" id="analyze-btn" onclick="analyze()">🔬 <span id="btn-text">Analyze</span></button>
+    </div>
+  </div>
+
+  <div id="ex-sec">
+    <div class="ex-label" id="ex-label">Try an example</div>
+    <div class="examples" id="chips-container"></div>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<div id="inst-bar">
+  <span style="font-size:26px">📲</span>
+  <div>
+    <div class="ibt" id="inst-title">Install NutriAI App</div>
+    <div class="ibs" id="inst-sub">Add to home screen!</div>
+  </div>
+  <button class="btn-inst" id="inst-btn">Install</button>
+  <button class="btn-dis" onclick="hideBar()">✕</button>
+</div>
+
+<script>
+// ── Language System ──
+const LANG = {
+  en: {
+    h1: 'What Are You<br>Consuming?',
+    sub: 'Any food or drink — instant AI analysis',
+    hint: 'Press Enter or tap Analyze',
+    btn: 'Analyze',
+    exLabel: 'Try an example',
+    skelMsg: '🧬 Running nutritional analysis…',
+    instTitle: 'Install NutriAI App',
+    instSub: 'Add to home screen!',
+    langFlag: '🇵🇰', langLabel: 'اردو',
+    placeholder: 'Type any food or drink…\ne.g. Biryani, Coca-Cola, Samosa',
+    secNutrition: 'NUTRITION BREAKDOWN',
+    secHealth: 'HEALTH RATING',
+    secDigestion: 'DIGESTION & ABSORPTION',
+    secWarnings: 'HEALTH WARNINGS',
+    secSummary: 'SUMMARY',
+    scoreLabel: 'HEALTH SCORE',
+    calLabel: 'CALORIES',
+    chips: [
+      ['🍔','Big Mac'],['🧃','Orange Juice'],['🍚','Biryani'],
+      ['⚡','Red Bull'],['🍕','Pizza'],['🥛','Milk'],['🫔','Samosa'],['🍵','Green Tea']
+    ]
+  },
+  ur: {
+    h1: 'آپ کیا کھا رہے ہیں؟',
+    sub: 'کوئی بھی کھانا یا مشروب — فوری AI تجزیہ',
+    hint: 'تجزیہ کریں بٹن دبائیں',
+    btn: 'تجزیہ کریں',
+    exLabel: 'مثال آزمائیں',
+    skelMsg: '🧬 غذائی تجزیہ جاری ہے…',
+    instTitle: 'NutriAI ایپ انسٹال کریں',
+    instSub: 'ہوم اسکرین پر شامل کریں!',
+    langFlag: '🇬🇧', langLabel: 'English',
+    placeholder: 'کوئی بھی کھانا یا مشروب لکھیں…\nمثلاً: بریانی، کوکاکولا، سموسہ',
+    secNutrition: 'غذائی تفصیل',
+    secHealth: 'صحت کی درجہ بندی',
+    secDigestion: 'ہضم اور جذب',
+    secWarnings: 'صحت کی تنبیہات',
+    secSummary: 'خلاصہ',
+    scoreLabel: 'صحت اسکور',
+    calLabel: 'کیلوریز',
+    chips: [
+      ['🍔','بگ میک'],['🧃','اورنج جوس'],['🍚','بریانی'],
+      ['⚡','ریڈ بُل'],['🍕','پزا'],['🥛','دودھ'],['🫔','سموسہ'],['🍵','سبز چائے']
+    ]
+  }
+};
+
+let curLang = localStorage.getItem('nutri_lang') || 'en';
+
+function applyLang(){
+  const L = LANG[curLang];
+  const isUr = curLang === 'ur';
+
+  document.body.classList.toggle('ur', isUr);
+  document.documentElement.lang = curLang;
+
+  document.getElementById('h1-text').innerHTML = L.h1;
+  document.getElementById('sub-text').textContent = L.sub;
+  document.getElementById('hint-text').textContent = L.hint;
+  document.getElementById('btn-text').textContent = L.btn;
+  document.getElementById('ex-label').textContent = L.exLabel;
+  document.getElementById('inst-title').textContent = L.instTitle;
+  document.getElementById('inst-sub').textContent = L.instSub;
+  document.getElementById('lang-flag').textContent = L.langFlag;
+  document.getElementById('lang-label').textContent = L.langLabel;
+  document.getElementById('food-inp').placeholder = L.placeholder;
+
+  // Rebuild chips
+  const cc = document.getElementById('chips-container');
+  cc.innerHTML = L.chips.map(([e,n])=>
+    `<button class="chip" onclick="setEx('${n}')">${e} ${n}</button>`
+  ).join('');
+}
+
+function toggleLang(){
+  curLang = curLang === 'en' ? 'ur' : 'en';
+  localStorage.setItem('nutri_lang', curLang);
+  applyLang();
+}
+
+// ── Service Worker ──
+if('serviceWorker' in navigator)
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{}));
+
+// ── Key helpers ──
+const KEY_STORE = 'nutri_groq_key';
+const getKey = () => localStorage.getItem(KEY_STORE)||'';
+
+function openModal(){
+  document.getElementById('modal').style.display='flex';
+  const k = getKey();
+  if(k){
+    document.getElementById('saved-row').style.display='flex';
+    document.getElementById('key-inp').value=k;
+  }
+}
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+
+window.addEventListener('DOMContentLoaded',()=>{
+  applyLang();
+  if(!getKey()) openModal(); else closeModal();
+});
+document.getElementById('modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('modal') && getKey()) closeModal();
+});
+function toggleEye(){
+  const i=document.getElementById('key-inp');
+  i.type=i.type==='password'?'text':'password';
+}
+
+async function testKey(){
+  const val=document.getElementById('key-inp').value.trim();
+  if(!val){showTR('warn','Key field khaali hai');return;}
+  if(!val.startsWith('gsk_')){showTR('warn','⚠️ Key "gsk_" se shuru honi chahiye');return;}
+  const btn=document.getElementById('test-btn');
+  btn.innerHTML='<span class="spinner-m"></span>';btn.disabled=true;
+  showTR('','');
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+val},
+      body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'user',content:'Say OK'}],max_tokens:5})
+    });
+    const d=await r.json();
+    if(r.ok&&d.choices) showTR('ok','✅ Key bilkul sahi hai! Ab Save karo 🎉');
+    else if(r.status===401) showTR('err','❌ Key invalid — nai key banao');
+    else showTR('err','❌ '+(d?.error?.message||'Error'));
+  }catch(e){showTR('err','❌ Network error: '+e.message);}
+  btn.innerHTML='🧪 Test';btn.disabled=false;
+}
+function showTR(type,msg){
+  const d=document.getElementById('test-res');
+  if(!msg){d.innerHTML='';return;}
+  d.innerHTML=`<div class="tr-${type==='ok'?'ok':type==='err'?'err':'warn'}">${msg}</div>`;
+}
+function saveKey(){
+  const val=document.getElementById('key-inp').value.trim();
+  if(!val){alert('Key enter karo');return;}
+  if(!val.startsWith('gsk_')){alert('Groq key "gsk_" se shuru hoti hai');return;}
+  localStorage.setItem(KEY_STORE,val);
+  closeModal();
+  document.getElementById('food-inp').focus();
+}
+
+document.getElementById('food-inp').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();analyze();}
+});
+function setEx(n){document.getElementById('food-inp').value=n;document.getElementById('food-inp').focus();}
+
+// Install
+let dp=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();dp=e;
+  document.getElementById('inst-bar').style.display='flex';
+});
+document.getElementById('inst-btn').onclick=async()=>{
+  if(!dp)return;dp.prompt();await dp.userChoice;dp=null;hideBar();
+};
+function hideBar(){document.getElementById('inst-bar').style.display='none';}
+
+const CATS={Healthy:'#00ff9d',Junk:'#ff4d6d',Mixed:'#ffd166',Hydrating:'#00e5ff',Sugary:'#ffd166','Protein-rich':'#b47dff'};
+
+const PILL_LABELS = {
+  en: { protein:'Protein', carbs:'Carbs', fat:'Fat', sugar:'Sugar', fiber:'Fiber', caffeine:'Caffeine', hydration:'Hydration', electrolytes:'Electrolytes' },
+  ur: { protein:'پروٹین', carbs:'کاربس', fat:'چکنائی', sugar:'شکر', fiber:'ریشہ', caffeine:'کیفین', hydration:'آبیدگی', electrolytes:'الیکٹرولائٹس' }
+};
+
+async function analyze(){
+  const input=document.getElementById('food-inp').value.trim();
+  if(!input)return;
+  const key=getKey();
+  if(!key){openModal();return;}
+
+  const L=LANG[curLang];
+  const isUr=curLang==='ur';
+
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true;
+  btn.innerHTML=`<span class="spinner"></span> ${isUr?'تجزیہ…':'Analyzing…'}`;
+  document.getElementById('ex-sec').style.display='none';
+  showSkeleton();
+
+  const langInstruction = isUr
+    ? `IMPORTANT: Write ALL text fields (health_explanation, digestion reasons, health_warnings, simple_explanation, name) in URDU language using Urdu script. Numbers and units stay in English/numerals.`
+    : `Write all text fields in English.`;
+
+  const PROMPT=`You are a Nutrition Scientist AI. Analyze the food/drink item and return ONLY valid JSON — no markdown, no extra text.
+
+${langInstruction}
+
+TYPE RULES:
+- type="Food": solids you chew — burger, pizza, biryani, rice, bread, samosa, paratha, roti, egg, meat, fruit, salad, cake, chips, curry, noodles, etc.
+- type="Drink": liquids you sip — water, juice, soda, milk, tea, coffee, energy drink, smoothie, lassi, shake, etc.
+
+FIELD RULES:
+- Food: include protein, carbs, fat, fiber. Skip caffeine, hydration_level, electrolytes.
+- Drink: include caffeine, hydration_level, electrolytes. Skip protein, carbs, fat, fiber.
+
+Return EXACTLY this JSON:
+{"name":"item name","type":"Food or Drink","category":"Junk|Healthy|Mixed|Hydrating|Sugary|Protein-rich","calories":"e.g. 540 kcal","protein":"e.g. 28g","carbs":"e.g. 45g","fat":"e.g. 22g","sugar":"e.g. 9g","fiber":"e.g. 3g","caffeine":"e.g. 80mg or None","hydration_level":"Low|Medium|High","electrolytes":"Yes|No|Low","health_score":7,"health_explanation":"one sentence","digestion":[{"emoji":"👶","label":"Baby (0-5)","time":"3-4 hrs","reason":"one sentence"},{"emoji":"🧑","label":"Teen (13-19)","time":"2-3 hrs","reason":"one sentence"},{"emoji":"👨","label":"Adult (20-50)","time":"2.5-3.5 hrs","reason":"one sentence"},{"emoji":"👴","label":"Older (50+)","time":"4-5 hrs","reason":"one sentence"}],"health_warnings":[],"simple_explanation":"2-3 sentences"}
+
+Item to analyze: ${input}`;
+
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:PROMPT}],max_tokens:1000,temperature:0.3})
+    });
+    if(r.status===401){
+      document.getElementById('out').innerHTML=`<div class="err-box">❌ API Key invalid!<br>⚙️ Gear icon tap karo aur sahi key daalo.<br><br><a href="https://console.groq.com/keys" target="_blank">👉 Free key lo</a></div>`;
+      return;
+    }
+    if(!r.ok){const ed=await r.json().catch(()=>({}));throw new Error(ed?.error?.message||'HTTP '+r.status);}
+    const data=await r.json();
+    let raw=data?.choices?.[0]?.message?.content||'';
+    raw=raw.replace(/```json|```/g,'').trim();
+    const jm=raw.match(/\{[\s\S]*\}/);
+    if(!jm)throw new Error('No JSON returned');
+    renderResult(JSON.parse(jm[0]));
+  }catch(e){
+    document.getElementById('out').innerHTML=
+      `<div class="err-box">❌ <strong>Analysis Failed</strong><code>${e.message}</code>⚙️ API key check karo<br><a href="https://console.groq.com/keys" target="_blank">👉 Free Groq key lo</a></div>`;
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=`🔬 <span id="btn-text">${L.btn}</span>`;
+  }
+}
+
+function showSkeleton(){
+  const L=LANG[curLang];
+  document.getElementById('out').innerHTML=`
+    <div class="skeleton">
+      ${[80,55,40,70,50].map(w=>`<div class="sk" style="width:${w}%"></div>`).join('')}
+      <div class="sk-msg">${L.skelMsg}</div>
+    </div>`;
+}
+
+function renderResult(d){
+  const L=LANG[curLang];
+  const PL=PILL_LABELS[curLang];
+  const isUr=curLang==='ur';
+  const isFood=!!(d.protein||d.carbs||d.fat||d.fiber)||d.type==='Food';
+  const cc=CATS[d.category]||'#e2e8f0';
+  const sc=d.health_score>=7?'#00ff9d':d.health_score>=4?'#ffd166':'#ff4d6d';
+  const pct=(d.health_score/10)*100;
+  const ws=d.health_warnings||[];
+
+  const np=isFood
+    ?[[PL.protein,d.protein,'#b47dff'],[PL.carbs,d.carbs,'#ffd166'],[PL.fat,d.fat,'#ff4d6d'],[PL.sugar,d.sugar,'#ffd166'],[PL.fiber,d.fiber,'#00ff9d']]
+    :[[PL.sugar,d.sugar,'#ffd166'],[PL.caffeine,d.caffeine,'#00e5ff'],
+      [PL.hydration,d.hydration_level,d.hydration_level==='High'?'#00ff9d':d.hydration_level==='Medium'?'#ffd166':'#ff4d6d'],
+      [PL.electrolytes,d.electrolytes,'#b47dff']];
+
+  const urStyle=isUr?'direction:rtl;text-align:right;':'';
+
+  document.getElementById('out').innerHTML=`
+    <div class="result-card">
+      <div class="rh">
+        <div style="flex:1">
+          <div class="rname" style="${urStyle}">${d.name}</div>
+          <div class="tags">
+            <span class="tag tag-t">${d.type}</span>
+            <span class="tag" style="background:${cc}22;color:${cc}">${d.category}</span>
+          </div>
+        </div>
+        <div class="cal-box" style="margin-left:10px">
+          <div class="cal-lbl">${L.calLabel}</div>
+          <div class="cal-val">${(d.calories||'').replace(/[^0-9]/g,'')||'—'}</div>
+          <div class="cal-u">kcal</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t">${L.secNutrition}</div>
+        <div class="pills">${np.map(([l,v,c])=>`
+          <div class="pill">
+            <span class="pl">${l}</span>
+            <span class="pv" style="color:${c}">${v||'—'}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t">${L.secHealth}</div>
+        <div class="sc-row">
+          <span class="sc-lbl">${L.scoreLabel}</span>
+          <span class="sc-num" style="color:${sc}">${d.health_score}/10</span>
+        </div>
+        <div class="sc-track">
+          <div class="sc-fill" style="width:${pct}%;background:linear-gradient(90deg,${sc}88,${sc});box-shadow:0 0 8px ${sc}88"></div>
+        </div>
+        <div class="sc-exp" style="${urStyle}">${d.health_explanation}</div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t">${L.secDigestion}</div>
+        <div class="age-cards">
+          ${(d.digestion||[]).map(a=>`
+            <div class="ac">
+              <span class="ae">${a.emoji}</span>
+              <div class="ab">
+                <div class="at">
+                  <span class="ag" style="${urStyle}">${a.label}</span>
+                  <span class="atm">${a.time}</span>
+                </div>
+                <div class="ar" style="${urStyle}">${a.reason}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      ${ws.length?`
+      <div class="sec">
+        <div class="sec-t">${L.secWarnings}</div>
+        <div class="warns">
+          ${ws.map(w=>`<div class="warn" style="${urStyle}">⚠️ ${w}</div>`).join('')}
+        </div>
+      </div>`:''}
+
+      <div class="sec">
+        <div class="sec-t">${L.secSummary}</div>
+        <div class="sum-box" style="${urStyle}">${d.simple_explanation}</div>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
